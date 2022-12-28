@@ -1,4 +1,5 @@
 from dataclasses import dataclass, asdict
+from typing import List
 
 
 @dataclass
@@ -117,7 +118,7 @@ TRAIN_CLASSES = {
 }
 
 
-def read_package(workout_type: str, data: list[int]) -> Training:
+def read_package(workout_type: str, data: List[int]) -> Training:
     """Прочитать данные полученные от датчиков."""
     class_types: Training = TRAIN_CLASSES[workout_type](*data)
     return class_types
