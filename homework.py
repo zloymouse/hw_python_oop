@@ -1,5 +1,5 @@
 from dataclasses import dataclass, asdict, fields
-from typing import List, Type
+from typing import List
 
 
 @dataclass
@@ -124,7 +124,7 @@ class Swimming(Training):
         )
 
 
-TRAIN_CLASSES: dict[str, Type[Training]] = {
+TRAIN_CLASSES: dict = {
     'SWM': Swimming,
     'RUN': Running,
     'WLK': SportsWalking
@@ -133,7 +133,7 @@ TRAIN_CLASSES: dict[str, Type[Training]] = {
 
 # не совсем до конца понял, как делать страховку, вот как я это представил
 # если неправильно, то подскажите примером использования
-COUNT_TYPES: dict[Type[Training], int] = {
+COUNT_TYPES: dict[Training, int] = {
     Running: len(fields(Running)),
     SportsWalking: len(fields(SportsWalking)),
     Swimming: len(fields(Swimming))
@@ -145,7 +145,7 @@ def read_package(workout_type: str, data: List[int]) -> Training:
     class_types: Training = TRAIN_CLASSES[workout_type](*data)
     return class_types
 
-    if COUNT_TYPES[Type[Training]] != fields(Training):
+    if COUNT_TYPES[Training] != fields(Training):
         raise ValueError('Превышено количество входных параметров')  # проверка
 
 
