@@ -133,7 +133,7 @@ TRAIN_CLASSES: dict = {
 
 # не совсем до конца понял, как делать страховку, вот как я это представил
 # если неправильно, то подскажите примером использования
-COUNT_TYPES: dict[Training, int] = {
+COUNT_TYPES: dict = {
     Running: len(fields(Running)),
     SportsWalking: len(fields(SportsWalking)),
     Swimming: len(fields(Swimming))
