@@ -1,5 +1,5 @@
-from dataclasses import dataclass, asdict
-from typing import List
+from dataclasses import dataclass, asdict, fields
+from typing import List, Type
 
 
 @dataclass
@@ -11,7 +11,7 @@ class InfoMessage:
     speed: float
     calories: float
 
-    message_template: str = (
+    MESSAGE_TEMPLATE: str = (
         'Тип тренировки: {training_type}; '
         'Длительность: {duration:.3f} ч.; '
         'Дистанция: {distance:.3f} км; '
@@ -20,7 +20,7 @@ class InfoMessage:
     )
 
     def get_message(self) -> str:
-        return self.message_template.format(**asdict(self))
+        return self.MESSAGE_TEMPLATE.format(**asdict(self))
 
 
 @dataclass
@@ -48,14 +48,13 @@ class Training:
 
     def show_training_info(self) -> InfoMessage:
         """Вернуть информационное сообщение о выполненной тренировке."""
-        training: InfoMessage = InfoMessage(
+        return InfoMessage(
             type(self).__name__,
             self.duration,
             self.get_distance(),
             self.get_mean_speed(),
             self.get_spent_calories()
         )
-        return training
 
 
 class Running(Training):
@@ -64,9 +63,13 @@ class Running(Training):
     CALORIES_MEAN_SPEED_SHIFT = 1.79
 
     def get_spent_calories(self) -> float:
-        return ((self.CALORIES_MEAN_SPEED_MULTIPLIER
-                * self.get_mean_speed() + self.CALORIES_MEAN_SPEED_SHIFT)
-                * self.weight / self.M_IN_KM * self.duration * self.MIN_IN_H)
+        return (
+            (
+                self.CALORIES_MEAN_SPEED_MULTIPLIER
+                * self.get_mean_speed() + self.CALORIES_MEAN_SPEED_SHIFT
+            )
+            * self.weight / self.M_IN_KM * self.duration * self.MIN_IN_H
+        )
 
 
 @dataclass
@@ -74,17 +77,21 @@ class SportsWalking(Training):
     """Тренировка: спортивная ходьба."""
     CALORIES_WEIGHT_MULTIPLIER = 0.035
     CALORIES_SPEED_HEIGHT_MULTIPLIER = 0.029
-    KMH_IN_MSEC = 0.278
+    KMH_IN_MSEC = round(1000 / 3600, 3)
     CM_IN_M = 100
 
     height: float
 
     def get_spent_calories(self) -> float:
-        return ((self.CALORIES_WEIGHT_MULTIPLIER * self.weight
+        return (
+            (
+                self.CALORIES_WEIGHT_MULTIPLIER * self.weight
                 + (self.get_mean_speed() * self.KMH_IN_MSEC) ** 2
                 / (self.height / self.CM_IN_M)
-                * self.CALORIES_SPEED_HEIGHT_MULTIPLIER * self.weight)
-                * self.duration * self.MIN_IN_H)
+                * self.CALORIES_SPEED_HEIGHT_MULTIPLIER * self.weight
+            )
+            * self.duration * self.MIN_IN_H
+        )
 
 
 @dataclass
@@ -94,27 +101,42 @@ class Swimming(Training):
     CALORIES_MEAN_SPEED_SHIFT = 1.1
     CALORIES_WEIGHT_MULTIPLIER = 2
 
-    count_pool: float
+    count_pool: int
     length_pool: float
 
     def get_mean_speed(self) -> float:
-        return (self.length_pool
-                * self.count_pool
-                / self.M_IN_KM
-                / self.duration)
+        return (
+            self.length_pool
+            * self.count_pool
+            / self.M_IN_KM
+            / self.duration
+        )
 
     def get_spent_calories(self) -> float:
-        return ((self.get_mean_speed()
-                + self.CALORIES_MEAN_SPEED_SHIFT)
-                * self.CALORIES_WEIGHT_MULTIPLIER
-                * self.weight
-                * self.duration)
+        return (
+            (
+                self.get_mean_speed()
+                + self.CALORIES_MEAN_SPEED_SHIFT
+            )
+            * self.CALORIES_WEIGHT_MULTIPLIER
+            * self.weight
+            * self.duration
+        )
 
 
-TRAIN_CLASSES = {
+TRAIN_CLASSES: dict[str, Type[Training]] = {
     'SWM': Swimming,
     'RUN': Running,
     'WLK': SportsWalking
+}
+
+
+# не совсем до конца понял, как делать страховку, вот как я это представил
+# если неправильно, то подскажите примером использования
+COUNT_TYPES: dict[Type[Training], int] = {
+    Running: len(fields(Running)),
+    SportsWalking: len(fields(SportsWalking)),
+    Swimming: len(fields(Swimming))
 }
 
 
@@ -122,6 +144,9 @@ def read_package(workout_type: str, data: List[int]) -> Training:
     """Прочитать данные полученные от датчиков."""
     class_types: Training = TRAIN_CLASSES[workout_type](*data)
     return class_types
+
+    if COUNT_TYPES[Training] != fields(Training):
+        raise ValueError('Превышено количество входных параметров')  # проверка
 
 
 def main(training: Training) -> None:
@@ -137,8 +162,10 @@ if __name__ == '__main__':
     ]
 
     for workout_type, data in packages:
-        training = read_package(workout_type, data)
-        main(read_package(
-            workout_type,
-            data)
+        main(
+            read_package
+            (
+                workout_type,
+                data
+            )
         )
