@@ -145,7 +145,7 @@ def read_package(workout_type: str, data: List[int]) -> Training:
     class_types: Training = TRAIN_CLASSES[workout_type](*data)
     return class_types
 
-    if COUNT_TYPES[Training] != fields(Training):
+    if COUNT_TYPES[Type[Training]] != fields(Training):
         raise ValueError('Превышено количество входных параметров')  # проверка
 
 
