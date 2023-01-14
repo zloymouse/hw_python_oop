@@ -77,8 +77,9 @@ class SportsWalking(Training):
     """Тренировка: спортивная ходьба."""
     CALORIES_WEIGHT_MULTIPLIER = 0.035
     CALORIES_SPEED_HEIGHT_MULTIPLIER = 0.029
-    KMH_IN_MSEC = round(1000 / 3600, 3)
     CM_IN_M = 100
+    MIN_IN_H = 60
+    KMH_IN_MSEC = round(CM_IN_M * 10 / (MIN_IN_H ** 2), 3)
 
     height: float
 
@@ -124,29 +125,50 @@ class Swimming(Training):
         )
 
 
-TRAIN_CLASSES: dict = {
-    'SWM': Swimming,
-    'RUN': Running,
-    'WLK': SportsWalking
-}
+# TRAIN_CLASS_COUNT_TYPES = {
+#    'RUN': (Running, len(fields(Running))),
+#    'WLK': (SportsWalking, len(fields(SportsWalking))),
+#    'SWM': (Swimming, len(fields(Swimming)))
+# }
+# я не стал так соединять словари, потому что
+# не знаю как потом обратиться только к len(fields(...)),
+# а не всему кортежу
 
 
-# не совсем до конца понял, как делать страховку, вот как я это представил
-# если неправильно, то подскажите примером использования
 COUNT_TYPES: dict = {
-    Running: len(fields(Running)),
-    SportsWalking: len(fields(SportsWalking)),
-    Swimming: len(fields(Swimming))
+    'RUN': len(fields(Running)),
+    'WLK': len(fields(SportsWalking)),
+    'SWM': len(fields(Swimming))
 }
+
+TRAIN_CLASS: dict = {
+    'RUN': Running,
+    'WLK': SportsWalking,
+    'SWM': Swimming
+}
+
+error_message_1 = 'В словаре {} нет такого значения'
+error_message_2 = (
+    'Количество входных параметров ({}) в тренировке {} не совпадает'
+    ' с известным количеством полей в классе ({})'
+)
+
+values_count_types = COUNT_TYPES.values()
 
 
 def read_package(workout_type: str, data: List[int]) -> Training:
     """Прочитать данные полученные от датчиков."""
-    class_types: Training = TRAIN_CLASSES[workout_type](*data)
-    return class_types
-
-    if COUNT_TYPES[Training] != fields(Training):
-        raise ValueError('Превышено количество входных параметров')  # проверка
+    if workout_type not in TRAIN_CLASS:
+        raise KeyError(
+            error_message_1.format(TRAIN_CLASS)
+        )
+    return (
+        TRAIN_CLASS[workout_type](*data)
+    )
+    if len(*data) != values_count_types:
+        raise ValueError(
+            error_message_2.format(COUNT_TYPES[Training], data, len(data))
+        )
 
 
 def main(training: Training) -> None:
