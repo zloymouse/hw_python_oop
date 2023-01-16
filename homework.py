@@ -11,7 +11,7 @@ class InfoMessage:
     speed: float
     calories: float
 
-    MESSAGE_TEMPLATE: str = (
+    MESSAGE_TEMPLATE = (
         'Тип тренировки: {training_type}; '
         'Длительность: {duration:.3f} ч.; '
         'Дистанция: {distance:.3f} км; '
@@ -23,20 +23,24 @@ class InfoMessage:
         return self.MESSAGE_TEMPLATE.format(**asdict(self))
 
 
+M_IN_KM = 1000
+MIN_IN_H = 60
+
+
 @dataclass
 class Training:
     """Базовый класс тренировки."""
-    LEN_STEP = 0.65
-    M_IN_KM = 1000
-    MIN_IN_H = 60
-
     action: int
     duration: float
     weight: float
 
+    LEN_STEP = 0.65
+    M_IN_KM = M_IN_KM
+    MIN_IN_H = MIN_IN_H
+
     def get_distance(self) -> float:
         """Получить дистанцию в км."""
-        return self.action * self.LEN_STEP / self.M_IN_KM
+        return self.action * self.LEN_STEP / M_IN_KM
 
     def get_mean_speed(self) -> float:
         """Получить среднюю скорость движения."""
@@ -57,6 +61,7 @@ class Training:
         )
 
 
+@dataclass
 class Running(Training):
     """Тренировка: бег."""
     CALORIES_MEAN_SPEED_MULTIPLIER = 18
@@ -68,7 +73,7 @@ class Running(Training):
                 self.CALORIES_MEAN_SPEED_MULTIPLIER
                 * self.get_mean_speed() + self.CALORIES_MEAN_SPEED_SHIFT
             )
-            * self.weight / self.M_IN_KM * self.duration * self.MIN_IN_H
+            * self.weight / M_IN_KM * self.duration * MIN_IN_H
         )
 
 
@@ -78,8 +83,7 @@ class SportsWalking(Training):
     CALORIES_WEIGHT_MULTIPLIER = 0.035
     CALORIES_SPEED_HEIGHT_MULTIPLIER = 0.029
     CM_IN_M = 100
-    MIN_IN_H = 60
-    KMH_IN_MSEC = round(CM_IN_M * 10 / (MIN_IN_H ** 2), 3)
+    KMH_IN_MSEC = round(M_IN_KM / (MIN_IN_H ** 2), 3)
 
     height: float
 
@@ -91,7 +95,7 @@ class SportsWalking(Training):
                 / (self.height / self.CM_IN_M)
                 * self.CALORIES_SPEED_HEIGHT_MULTIPLIER * self.weight
             )
-            * self.duration * self.MIN_IN_H
+            * self.duration * MIN_IN_H
         )
 
 
@@ -109,7 +113,7 @@ class Swimming(Training):
         return (
             self.length_pool
             * self.count_pool
-            / self.M_IN_KM
+            / M_IN_KM
             / self.duration
         )
 
@@ -125,50 +129,36 @@ class Swimming(Training):
         )
 
 
-# TRAIN_CLASS_COUNT_TYPES = {
-#    'RUN': (Running, len(fields(Running))),
-#    'WLK': (SportsWalking, len(fields(SportsWalking))),
-#    'SWM': (Swimming, len(fields(Swimming)))
-# }
-# я не стал так соединять словари, потому что
-# не знаю как потом обратиться только к len(fields(...)),
-# а не всему кортежу
-
-
-COUNT_TYPES: dict = {
-    'RUN': len(fields(Running)),
-    'WLK': len(fields(SportsWalking)),
-    'SWM': len(fields(Swimming))
+TRAIN_CLASSES_COUNT_TYPES = {
+    'RUN': [Running, len(fields(Running))],
+    'WLK': [SportsWalking, len(fields(SportsWalking))],
+    'SWM': [Swimming, len(fields(Swimming))]
 }
 
-TRAIN_CLASS: dict = {
-    'RUN': Running,
-    'WLK': SportsWalking,
-    'SWM': Swimming
-}
 
-error_message_1 = 'В словаре {} нет такого значения'
-error_message_2 = (
+ERROR_MESSAGE_MISS = 'Тренировка {} оказалась неожиданной'
+ERROR_WRONG_NUMBER = (
     'Количество входных параметров ({}) в тренировке {} не совпадает'
-    ' с известным количеством полей в классе ({})'
+    ' с известным количеством полей в этой тренировке'
 )
-
-values_count_types = COUNT_TYPES.values()
 
 
 def read_package(workout_type: str, data: List[int]) -> Training:
     """Прочитать данные полученные от датчиков."""
-    if workout_type not in TRAIN_CLASS:
-        raise KeyError(
-            error_message_1.format(TRAIN_CLASS)
+    if workout_type not in TRAIN_CLASSES_COUNT_TYPES.keys():
+        raise ValueError(
+            ERROR_MESSAGE_MISS.format(workout_type)
+        )
+    if len(data) != TRAIN_CLASSES_COUNT_TYPES[workout_type][1]:
+        raise ValueError(
+            ERROR_WRONG_NUMBER.format(
+                len(data),
+                TRAIN_CLASSES_COUNT_TYPES[workout_type][0]
+            )
         )
     return (
-        TRAIN_CLASS[workout_type](*data)
+        TRAIN_CLASSES_COUNT_TYPES[workout_type][0](*data)
     )
-    if len(*data) != values_count_types:
-        raise ValueError(
-            error_message_2.format(COUNT_TYPES[Training], data, len(data))
-        )
 
 
 def main(training: Training) -> None:
